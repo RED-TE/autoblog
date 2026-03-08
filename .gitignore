@@ -17,3 +17,6 @@ launcher_auth.json
 # Backup files
 *.bak
 *.tmp
+dist/ 
+build/ 
+*.zip 

@@ -108,8 +108,9 @@ def _apply_git_pull() -> bool:
 def check_and_apply_update() -> bool:
     """
     버전을 비교하고, 원격이 더 높으면 git pull을 실행합니다.
-    True 반환 → 업데이트 적용됨 (프로그램 재시작 필요)
-    False 반환 → 이미 최신 버전이거나 업데이트 불필요
+    True 반환 → 업데이트 자동 적용됨 (프로그램 재시작 필요)
+    False 반환 → 이미 최신 버전이거나 조용히 넘어감
+    에러/종료 → 버전 다름 & 자동 업데이트 실패 시 프로그램 강제 종료 후 수동 다운로드 안내
     """
     print("   🔄 [Updater] 버전 확인 중...")
 
@@ -117,24 +118,48 @@ def check_and_apply_update() -> bool:
     remote_ver = get_remote_version()
 
     if remote_ver is None:
-        # 네트워크 실패 → 조용히 스킵, 프로그램 정상 실행
+        # 네트워크 실패 등 원격 버전 확인 불가 시 스킵
         return False
 
     if _parse_version(remote_ver) <= _parse_version(local_ver):
         return False
 
     # 업데이트가 존재함
-    print(f"   🚀 [Updater] 신규 업데이트 발견!  {local_ver} → {remote_ver}")
+    print(f"\n========================================================")
+    print(f"   🚀 [System] 신규 업데이트 발견! (현재: {local_ver} → 최신: {remote_ver})")
+    print(f"========================================================\n")
 
     # .git 폴더 유무 확인
     base_dir  = os.path.dirname(os.path.abspath(__file__))
     git_dir   = os.path.join(base_dir, ".git")
-    if not os.path.isdir(git_dir):
-        print("   ⚠️ [Updater] .git 폴더가 없습니다. git clone으로 설치해야 자동 업데이트가 작동합니다.")
-        return False
+    
+    if os.path.isdir(git_dir):
+        # 자동 업데이트 시도
+        success = _apply_git_pull()
+        if success:
+            return True
 
-    success = _apply_git_pull()
-    return success
+    # 1) .git 폴더가 없거나 (EXE 사용자)
+    # 2) git pull 자동 업데이트가 실패했을 경우
+    
+    import webbrowser
+    import time
+    
+    down_link = "https://drive.google.com/file/d/18d3CgGKfU7qA6McN1sFksksnzhgZLn_m/view?usp=drive_link"
+    print("\n   ⚠️ 프로그램 버전을 최신으로 유지해야만 실행 가능합니다.")
+    print("   ⚠️ 자동 업데이트를 사용할 수 없는 환경입니다. (혹은 권한 오류)")
+    print(f"   👉 아래 구글 드라이브 링크에서 최신 버전({remote_ver})을 다운로드해주세요.")
+    print(f"   🌐 다운로드 링크: {down_link}\n")
+    
+    try:
+        # 3초 대기 후 다운로드 링크 창 띄우기
+        time.sleep(3)
+        webbrowser.open(down_link)
+    except Exception:
+        pass
+        
+    print("   ❌ 버전을 맞추지 않으면 봇을 실행할 수 없습니다. 프로그램을 종료합니다.")
+    sys.exit(1)
 
 
 if __name__ == "__main__":
