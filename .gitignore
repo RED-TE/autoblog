@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Local state/config
+_app_state.json
+_ui_config.json
+browser_profiles/
+_uploaded_images/
+*.log
+account.txt
+launcher_auth.json
+
+# Backup files
+*.bak
+*.tmp
